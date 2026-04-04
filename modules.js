@@ -43,14 +43,16 @@ const MODULES = {
           <div class="form-group"><label>Setting / Latar</label><span class="field-hint">Pilih atau ketik manual:</span><div id="f-setting-chips" class="chips-row"></div><input type="text" id="f-setting" placeholder="Ketik setting custom..."/></div>
           <div class="form-group"><label>Vibe / Mood</label><span class="field-hint">Pilih atau ketik manual:</span><div id="f-vibe-chips" class="chips-row"></div><input type="text" id="f-vibe" placeholder="Ketik vibe custom..."/></div>
           <div class="form-group"><label>Warna Merek (Opsional)</label><input type="text" id="f-color" placeholder="Cth: Earthy tone, pastel pink"/></div>
+          <div class="form-group"><label>Bahasa Output</label><div id="f-lang-chips" class="chips-row"></div></div>
         </div>`;
     },
     validate1: () => {const c=document.getElementById('f-category');const p=document.getElementById('f-product');return c&&p&&c.value&&p.value.trim()},
     validate2: () => { const s=window._activeSetting||document.getElementById('f-setting')?.value||''; const v=window._activeVibe||document.getElementById('f-vibe')?.value||''; return s.trim()&&v.trim(); },
     collectStep1: () => ({category:document.getElementById('f-category').value,product:document.getElementById('f-product').value,platform:document.getElementById('f-platform').value,style:window._activeStyle||'UGC Casual',faceImage:window._faceImage||null}),
-    collectStep2: () => ({setting:window._activeSetting||document.getElementById('f-setting').value,vibe:window._activeVibe||document.getElementById('f-vibe').value,color:document.getElementById('f-color').value}),
+    collectStep2: () => ({setting:window._activeSetting||document.getElementById('f-setting').value,vibe:window._activeVibe||document.getElementById('f-vibe').value,color:document.getElementById('f-color').value,lang:window._activeLang||'Indonesia'}),
     buildPrompt: (d) => `Kamu ahli fotografi produk afiliasi. Buatkan 5 variasi pose foto/video untuk produk afiliasi.
 Kategori: ${d.category}, Produk: ${d.product}, Setting: ${d.setting}, Vibe: ${d.vibe}, Platform: ${d.platform}, Gaya: ${d.style}${d.color?', Warna Brand: '+d.color:''}${d.faceImage?', Ada referensi wajah.':''}
+Bahasa hasil (name, description, prompt text): ${d.lang}
 ATURAN: Jika BAJU→fokus kain/potongan. SEPATU→low-angle/kaki. HIJAB→draping/framing wajah. MAKANAN→interaksi makan. SKINCARE→aplikasi/glow. AKSESORIS→detail/refleksi.
 FORMAT JSON MURNI (tanpa markdown): [{"name":"...","description":"deskripsi ID","imagePrompt":"Photorealistic portrait of Indonesian character. ${d.faceImage?'(Use attached face reference) ':''}[pose detail]. Set in ${d.setting}. ${d.vibe}. Aspect ${(d.platform.match(/\(([^)]+)\)/)||['','9:16'])[1]}. 8k, cinematic lighting, photorealism, 35mm lens.${d.color?' Color grading: '+d.color+'.':''}","videoPrompt":"Cinematic short video in ${d.setting}. [action]. ${d.vibe}. Aspect ${(d.platform.match(/\(([^)]+)\)/)||['','9:16'])[1]}. High quality, steady camera."}] Berikan tepat 5 objek.`,
   },
@@ -84,13 +86,15 @@ FORMAT JSON MURNI (tanpa markdown): [{"name":"...","description":"deskripsi ID",
     step2: (c) => {c.innerHTML=`<div style="display:flex;flex-direction:column;gap:18px">
       <div class="form-group"><label>Gaya Visual</label><div id="f-vis-chips" class="chips-row"></div></div>
       <div class="form-group"><label>Mood / Atmosphere</label><div id="f-mood-chips" class="chips-row"></div></div>
-      <div class="form-group"><label>Detail Tambahan (Opsional)</label><input type="text" id="f-extra" placeholder="Cth: Ada kabut tebal, cahaya kemerahan..."/></div></div>`;},
+      <div class="form-group"><label>Detail Tambahan (Opsional)</label><input type="text" id="f-extra" placeholder="Cth: Ada kabut tebal, cahaya kemerahan..."/></div>
+      <div class="form-group"><label>Bahasa Output</label><div id="f-lang-chips" class="chips-row"></div></div></div>`;},
     validate1: () => document.getElementById('f-topic')?.value.trim()&&document.getElementById('f-narration')?.value.trim(),
     validate2: () => (window._activeVisual||'').trim()&&(window._activeMood||'').trim(),
     collectStep1: () => ({topic:document.getElementById('f-topic').value,narration:document.getElementById('f-narration').value,platform:document.getElementById('f-platform2').value,refImage:window._facelessRefImage||null}),
-    collectStep2: () => ({visual:window._activeVisual||'',mood:window._activeMood||'',extra:document.getElementById('f-extra')?.value||''}),
+    collectStep2: () => ({visual:window._activeVisual||'',mood:window._activeMood||'',extra:document.getElementById('f-extra')?.value||'',lang:window._activeLang||'Indonesia'}),
     buildPrompt: (d) => `Kamu pembuat prompt visual untuk konten faceless/tanpa wajah. Buatkan 5 variasi background scene.
 Topik: ${d.topic}, Narasi: ${d.narration}, Gaya Visual: ${d.visual}, Mood: ${d.mood}${d.extra?', Detail: '+d.extra:''}${d.refImage?', Ada referensi visual dari user.':''}
+Bahasa hasil (name, description, prompt text): ${d.lang}
 ATURAN: TIDAK BOLEH ada manusia/orang dalam scene. Fokus pada environment, atmosphere, lighting. Sangat sinematik.
 FORMAT JSON MURNI: [{"name":"Scene Name","description":"deskripsi ID","imagePrompt":"${d.refImage?'(Use attached visual reference for style/mood) ':''}[scene detail tanpa manusia]. ${d.mood}. 8k, cinematic, photorealistic, detailed environment.","videoPrompt":"Slow cinematic camera movement through [scene]. ${d.mood}. No people. High quality, atmospheric."}] Tepat 5.`,
   },
@@ -110,13 +114,15 @@ FORMAT JSON MURNI: [{"name":"Scene Name","description":"deskripsi ID","imageProm
     step2: (c) => {c.innerHTML=`<div style="display:flex;flex-direction:column;gap:18px">
       <div class="form-group"><label>Tema Warna</label><div id="f-uicolor-chips" class="chips-row"></div></div>
       <div class="form-group"><label>Gaya Desain</label><div id="f-uistyle-chips" class="chips-row"></div></div>
-      <div class="form-group"><label>Warna Brand (Opsional)</label><input type="text" id="f-uibrand" placeholder="Cth: Biru Navy, Hijau Emerald"/></div></div>`;},
+      <div class="form-group"><label>Warna Brand (Opsional)</label><input type="text" id="f-uibrand" placeholder="Cth: Biru Navy, Hijau Emerald"/></div>
+      <div class="form-group"><label>Bahasa Output</label><div id="f-lang-chips" class="chips-row"></div></div></div>`;},
     validate1: () => document.getElementById('f-apptype')?.value.trim()&&document.getElementById('f-feature')?.value.trim(),
     validate2: () => (window._activeUIColor||'').trim()&&(window._activeUIStyle||'').trim(),
     collectStep1: () => ({appType:document.getElementById('f-apptype').value,device:document.getElementById('f-device').value,feature:document.getElementById('f-feature').value}),
-    collectStep2: () => ({uiColor:window._activeUIColor||'',uiStyle:window._activeUIStyle||'',brand:document.getElementById('f-uibrand')?.value||''}),
+    collectStep2: () => ({uiColor:window._activeUIColor||'',uiStyle:window._activeUIStyle||'',brand:document.getElementById('f-uibrand')?.value||'',lang:window._activeLang||'Indonesia'}),
     buildPrompt: (d) => `Kamu ahli UI/UX design. Buatkan 5 variasi mockup desain untuk:
 Jenis: ${d.appType}, Device: ${d.device}, Fitur: ${d.feature}, Tema: ${d.uiColor}, Gaya: ${d.uiStyle}${d.brand?', Warna Brand: '+d.brand:''}
+Bahasa hasil (name, description, prompt text): ${d.lang}
 FORMAT JSON MURNI: [{"name":"Mockup Name","description":"deskripsi ID","imagePrompt":"Dribbble-style UI/UX mockup for ${d.appType}. ${d.device} view. Showing ${d.feature}. ${d.uiStyle} design style. ${d.uiColor} color scheme.${d.brand?' Primary color: '+d.brand+'.':''} Clean layout, modern typography, pixel-perfect, 4K resolution, professional UI design.","videoPrompt":""}] Tepat 5.`,
   },
 
@@ -137,18 +143,18 @@ FORMAT JSON MURNI: [{"name":"Mockup Name","description":"deskripsi ID","imagePro
       <div class="ai-message"><div class="ai-avatar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
         <p>Saya akan membuat <strong>${data.diagType}</strong> dari input Anda. Ada pengaturan tambahan?</p></div>
       <div class="form-group"><label>Detail Tambahan (Opsional)</label><input type="text" id="f-diagextra" placeholder="Cth: Tambahkan relasi many-to-many, fokus pada flow checkout"/></div>
-      <div class="form-group"><label>Bahasa Label</label><div id="f-diaglang-chips" class="chips-row"></div></div></div>`;},
+      <div class="form-group"><label>Bahasa Label/Output</label><div id="f-lang-chips" class="chips-row"></div></div></div>`;},
     validate1: () => document.getElementById('f-sql')?.value.trim(),
     validate2: () => true,
     collectStep1: () => ({diagType:document.getElementById('f-diagtype').value,sql:document.getElementById('f-sql').value}),
-    collectStep2: () => ({extra:document.getElementById('f-diagextra')?.value||'',lang:window._activeDiagLang||'Indonesia'}),
+    collectStep2: () => ({extra:document.getElementById('f-diagextra')?.value||'',lang:window._activeLang||'Indonesia'}),
     buildPrompt: (d) => `Kamu ahli software engineering. Buatkan kode Mermaid.js untuk ${d.diagType} berdasarkan input berikut.
 
 INPUT SQL/DESKRIPSI:
 ${d.sql}
 
 ${d.extra?'Detail tambahan: '+d.extra:''}
-Bahasa label: ${d.lang}
+Bahasa label dan anotasi: ${d.lang}
 
 ATURAN PENTING:
 - Output HANYA kode Mermaid.js VALID, tanpa backtick, tanpa markdown, tanpa penjelasan.
@@ -174,13 +180,15 @@ ATURAN PENTING:
     step2: (c) => {c.innerHTML=`<div style="display:flex;flex-direction:column;gap:18px">
       <div class="form-group"><label>Warna Utama</label><div id="f-logocolor-chips" class="chips-row"></div></div>
       <div class="form-group"><label>Elemen / Simbol (Opsional)</label><input type="text" id="f-symbol" placeholder="Cth: Cangkir kopi, Roda gigi, Daun"/></div>
-      <div class="form-group"><label>Referensi Brand Lain (Opsional)</label><input type="text" id="f-logoref" placeholder="Cth: Mirip gaya Starbucks, Apple, Nike"/></div></div>`;},
+      <div class="form-group"><label>Referensi Brand Lain (Opsional)</label><input type="text" id="f-logoref" placeholder="Cth: Mirip gaya Starbucks, Apple, Nike"/></div>
+      <div class="form-group"><label>Bahasa Output</label><div id="f-lang-chips" class="chips-row"></div></div></div>`;},
     validate1: () => document.getElementById('f-brand')?.value.trim()&&document.getElementById('f-industry')?.value.trim(),
     validate2: () => (window._activeLogoColor||'').trim(),
     collectStep1: () => ({brand:document.getElementById('f-brand').value,industry:document.getElementById('f-industry').value,logoStyle:window._activeLogoStyle||'Minimalis'}),
-    collectStep2: () => ({logoColor:window._activeLogoColor||'',symbol:document.getElementById('f-symbol')?.value||'',logoRef:document.getElementById('f-logoref')?.value||''}),
+    collectStep2: () => ({logoColor:window._activeLogoColor||'',symbol:document.getElementById('f-symbol')?.value||'',logoRef:document.getElementById('f-logoref')?.value||'',lang:window._activeLang||'Indonesia'}),
     buildPrompt: (d) => `Kamu ahli desain logo. Buatkan 5 variasi prompt logo untuk:
 Brand: ${d.brand}, Industri: ${d.industry}, Gaya: ${d.logoStyle}, Warna: ${d.logoColor}${d.symbol?', Simbol: '+d.symbol:''}${d.logoRef?', Referensi: '+d.logoRef:''}
+Bahasa hasil (name, description, prompt text): ${d.lang}
 ATURAN: Logo HARUS flat/vector style. Background PUTIH BERSIH. TIDAK ADA teks/tulisan dalam logo. Clean lines.
 FORMAT JSON MURNI: [{"name":"Logo Variant Name","description":"deskripsi ID","imagePrompt":"Professional ${d.logoStyle} logo design for ${d.brand}, a ${d.industry} brand. ${d.logoColor} color palette.${d.symbol?' Incorporating '+d.symbol+' symbol.':''} Vector flat design, white background, no text, clean lines, minimalist, professional branding, 4K.${d.logoRef?' Inspired by '+d.logoRef+' style.':''}","videoPrompt":""}] Tepat 5.`,
   },
@@ -213,13 +221,15 @@ FORMAT JSON MURNI: [{"name":"Logo Variant Name","description":"deskripsi ID","im
     step2: (c) => {c.innerHTML=`<div style="display:flex;flex-direction:column;gap:18px">
       <div class="form-group"><label>Waktu / Pencahayaan</label><div id="f-lighting-chips" class="chips-row"></div></div>
       <div class="form-group"><label>Palet Warna</label><input type="text" id="f-intcolor" placeholder="Cth: Earth tone, Monokrom putih-abu"/></div>
-      <div class="form-group"><label>Elemen Khusus (Opsional)</label><input type="text" id="f-intelement" placeholder="Cth: Tanaman hias, rak buku besar, perapian"/></div></div>`;},
+      <div class="form-group"><label>Elemen Khusus (Opsional)</label><input type="text" id="f-intelement" placeholder="Cth: Tanaman hias, rak buku besar, perapian"/></div>
+      <div class="form-group"><label>Bahasa Output</label><div id="f-lang-chips" class="chips-row"></div></div></div>`;},
     validate1: () => (window._activeIntStyle||'').trim(),
     validate2: () => (window._activeLighting||'').trim(),
     collectStep1: () => ({room:document.getElementById('f-room').value,intStyle:window._activeIntStyle||'',size:document.getElementById('f-size').value,refImage:window._interiorRefImage||null}),
-    collectStep2: () => ({lighting:window._activeLighting||'',intColor:document.getElementById('f-intcolor')?.value||'',element:document.getElementById('f-intelement')?.value||''}),
+    collectStep2: () => ({lighting:window._activeLighting||'',intColor:document.getElementById('f-intcolor')?.value||'',element:document.getElementById('f-intelement')?.value||'',lang:window._activeLang||'Indonesia'}),
     buildPrompt: (d) => `Kamu ahli desain interior & arsitektur. Buatkan 5 variasi render interior untuk:
 Ruangan: ${d.room}, Gaya: ${d.intStyle}, Ukuran: ${d.size}, Cahaya: ${d.lighting}${d.intColor?', Warna: '+d.intColor:''}${d.element?', Elemen: '+d.element:''}${d.refImage?', Ada referensi visual desain dari user.':''}
+Bahasa hasil (name, description, prompt text): ${d.lang}
 FORMAT JSON MURNI: [{"name":"Design Name","description":"deskripsi ID","imagePrompt":"${d.refImage?'(Use attached design reference for style inspiration) ':''}Photorealistic interior design render of a ${d.size} ${d.room}. ${d.intStyle} style. ${d.lighting} lighting.${d.intColor?' '+d.intColor+' color palette.':''}${d.element?' Featuring '+d.element+'.':''} Octane render, Unreal Engine 5, architectural visualization, 8K resolution, hyperrealistic, professional interior photography.","videoPrompt":""}] Tepat 5.`,
   },
 };
@@ -237,5 +247,5 @@ const CHIP_OPTIONS = {
   logoColors: ['Biru','Merah','Hijau','Hitam & Emas','Gradient Multi','Monokrom','Earth Tone','Pastel'],
   intStyles: ['Japandi','Industrial','Scandinavian','Modern Minimalis','Bohemian','Art Deco','Rustic','Mediterranean'],
   lightings: ['Pagi Cerah (Natural Light)','Siang Hari','Golden Hour / Senja','Malam Hari (Warm Lamp)','Dramatis (Spotlight)'],
-  diagLangs: ['Indonesia','English'],
+  outputLangs: ['Indonesia','English'],
 };

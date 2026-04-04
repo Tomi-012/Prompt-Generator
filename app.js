@@ -146,7 +146,7 @@ function openModule(id){
   window._activeUIColor='';window._activeUIStyle='';
   window._activeLogoStyle='Minimalis';window._activeLogoColor='';
   window._activeIntStyle='';window._activeLighting='';
-  window._activeDiagLang='Indonesia';
+  window._activeLang='Indonesia';
 
   $('#home-screen').classList.add('hidden');
   $('#wizard-screen').classList.remove('hidden');
@@ -267,7 +267,6 @@ function setupStep2Interactivity(m){
     bindInput('f-uibrand','input');
   }
   if(m.id==='diagram'){
-    renderChipGroup('f-diaglang-chips',CHIP_OPTIONS.diagLangs,'_activeDiagLang','Indonesia');
     bindInput('f-diagextra','input');
   }
   if(m.id==='logo'){
@@ -278,6 +277,7 @@ function setupStep2Interactivity(m){
     renderChipGroup('f-lighting-chips',CHIP_OPTIONS.lightings,'_activeLighting','');
     bindInput('f-intcolor','input');bindInput('f-intelement','input');
   }
+  renderChipGroup('f-lang-chips',CHIP_OPTIONS.outputLangs,'_activeLang','Indonesia');
 }
 
 // ===================== HELPERS =====================
