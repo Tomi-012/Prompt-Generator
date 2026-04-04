@@ -529,9 +529,9 @@ function saveToHistory(){
   localStorage.setItem(HISTORY_STORAGE,JSON.stringify(h));
   renderHistory();
 }
-function deleteHistoryItem(id){
+function deleteHistoryItem(timestamp){
   let h=loadHistory();
-  h=h.filter(x=>x.id!==id);
+  h=h.filter(x=>x.timestamp !== timestamp);
   localStorage.setItem(HISTORY_STORAGE,JSON.stringify(h));
   renderHistory();
 }
@@ -540,8 +540,7 @@ function renderHistory(){
   const list=$('#history-list');
   if(!h.length){list.innerHTML='<p class="history-empty">Belum ada riwayat.</p>';return;}
   list.innerHTML='';
-  h.forEach((entry, i)=>{
-    if (!entry.id) entry.id = entry.timestamp.toString() + i; // fallback old data
+  h.forEach((entry)=>{
     const item=document.createElement('div');item.className='history-item';
     const d=new Date(entry.timestamp);
     const dateStr=d.toLocaleDateString('id-ID')+' '+d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
@@ -549,7 +548,7 @@ function renderHistory(){
     item.innerHTML=`<div class="history-item-info"><div class="history-item-title">${entry.label}</div><div class="history-item-meta">${entry.title} · ${dateStr}</div></div>
       <div style="display:flex; align-items:center; gap:6px;">
         <span class="history-item-badge ${entry.usedAI?'gemini':'template'}">${entry.usedAI?pName:'Template'}</span>
-        <button class="btn-delete-history btn-icon-sm" data-id="${entry.id}" style="color:var(--color-danger);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
+        <button class="btn-delete-history btn-icon-sm" style="color:var(--color-danger);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
       </div>`;
     item.querySelector('.history-item-info').addEventListener('click',()=>{
       state.activeModule=entry.module;state.results=entry.results||[];state.mermaidCode=entry.mermaidCode||'';
@@ -564,7 +563,7 @@ function renderHistory(){
     });
     item.querySelector('.btn-delete-history').addEventListener('click',(e)=>{
       e.stopPropagation();
-      deleteHistoryItem(entry.id);
+      deleteHistoryItem(entry.timestamp);
       showToast('Item riwayat dihapus');
     });
     list.appendChild(item);
