@@ -46,7 +46,7 @@ const MODULES = {
         </div>`;
     },
     validate1: () => {const c=document.getElementById('f-category');const p=document.getElementById('f-product');return c&&p&&c.value&&p.value.trim()},
-    validate2: (data) => data.setting&&data.setting.trim()&&data.vibe&&data.vibe.trim(),
+    validate2: () => { const s=window._activeSetting||document.getElementById('f-setting')?.value||''; const v=window._activeVibe||document.getElementById('f-vibe')?.value||''; return s.trim()&&v.trim(); },
     collectStep1: () => ({category:document.getElementById('f-category').value,product:document.getElementById('f-product').value,platform:document.getElementById('f-platform').value,style:window._activeStyle||'UGC Casual',faceImage:window._faceImage||null}),
     collectStep2: () => ({setting:window._activeSetting||document.getElementById('f-setting').value,vibe:window._activeVibe||document.getElementById('f-vibe').value,color:document.getElementById('f-color').value}),
     buildPrompt: (d) => `Kamu ahli fotografi produk afiliasi. Buatkan 5 variasi pose foto/video untuk produk afiliasi.
