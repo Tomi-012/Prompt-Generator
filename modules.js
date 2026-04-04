@@ -66,22 +66,33 @@ FORMAT JSON MURNI (tanpa markdown): [{"name":"...","description":"deskripsi ID",
       {id:'img',label:'Prompt Background Image',colorClass:'card-color-image'},
       {id:'vid',label:'Prompt Background Video',colorClass:'card-color-video'},
     ],
-    step1: (c) => {c.innerHTML=`<div class="form-grid single-col">
-      <div class="form-group"><label>Topik / Niche Video <span class="required">*</span></label><input type="text" id="f-topic" placeholder="Cth: Cerita Horor Jepang, Fakta Luar Angkasa, Motivasi Bisnis"/></div>
-      <div class="form-group"><label>Judul/Narasi Video <span class="required">*</span></label><input type="text" id="f-narration" placeholder="Cth: 5 Tempat Paling Misterius di Dunia"/></div>
-      <div class="form-group"><label>Platform</label><div class="select-wrap"><select id="f-platform2"><option>TikTok / Reels (9:16)</option><option>YouTube Shorts (9:16)</option><option>YouTube (16:9)</option></select><svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div></div></div>`;},
+    step1: (c) => {c.innerHTML=`<div class="form-grid">
+      <label class="upload-area" for="fl-ref-upload">
+        <input type="file" id="fl-ref-upload" accept="image/*" hidden/>
+        <div id="fl-upload-placeholder" class="upload-placeholder">
+          <div class="upload-icon-wrap"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+          <h3>Referensi Visual (Opsional)</h3><p>JPG, PNG, WebP</p><div class="upload-btn-fake">Pilih File</div>
+        </div>
+        <div id="fl-upload-preview" class="upload-preview hidden"><img id="fl-preview-img" src="" alt="Preview"/><div class="preview-overlay"><div class="preview-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Terpilih</div><button id="fl-btn-remove-img" class="btn-remove-img" type="button">Hapus</button></div></div>
+      </label>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="form-group"><label>Topik / Niche Video <span class="required">*</span></label><input type="text" id="f-topic" placeholder="Cth: Cerita Horor Jepang, Fakta Luar Angkasa, Motivasi Bisnis"/></div>
+        <div class="form-group"><label>Judul/Narasi Video <span class="required">*</span></label><input type="text" id="f-narration" placeholder="Cth: 5 Tempat Paling Misterius di Dunia"/></div>
+        <div class="form-group"><label>Platform</label><div class="select-wrap"><select id="f-platform2"><option>TikTok / Reels (9:16)</option><option>YouTube Shorts (9:16)</option><option>YouTube (16:9)</option></select><svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div></div>
+      </div>
+    </div>`;},
     step2: (c) => {c.innerHTML=`<div style="display:flex;flex-direction:column;gap:18px">
       <div class="form-group"><label>Gaya Visual</label><div id="f-vis-chips" class="chips-row"></div></div>
       <div class="form-group"><label>Mood / Atmosphere</label><div id="f-mood-chips" class="chips-row"></div></div>
       <div class="form-group"><label>Detail Tambahan (Opsional)</label><input type="text" id="f-extra" placeholder="Cth: Ada kabut tebal, cahaya kemerahan..."/></div></div>`;},
     validate1: () => document.getElementById('f-topic')?.value.trim()&&document.getElementById('f-narration')?.value.trim(),
     validate2: () => (window._activeVisual||'').trim()&&(window._activeMood||'').trim(),
-    collectStep1: () => ({topic:document.getElementById('f-topic').value,narration:document.getElementById('f-narration').value,platform:document.getElementById('f-platform2').value}),
+    collectStep1: () => ({topic:document.getElementById('f-topic').value,narration:document.getElementById('f-narration').value,platform:document.getElementById('f-platform2').value,refImage:window._facelessRefImage||null}),
     collectStep2: () => ({visual:window._activeVisual||'',mood:window._activeMood||'',extra:document.getElementById('f-extra')?.value||''}),
     buildPrompt: (d) => `Kamu pembuat prompt visual untuk konten faceless/tanpa wajah. Buatkan 5 variasi background scene.
-Topik: ${d.topic}, Narasi: ${d.narration}, Gaya Visual: ${d.visual}, Mood: ${d.mood}${d.extra?', Detail: '+d.extra:''}
+Topik: ${d.topic}, Narasi: ${d.narration}, Gaya Visual: ${d.visual}, Mood: ${d.mood}${d.extra?', Detail: '+d.extra:''}${d.refImage?', Ada referensi visual dari user.':''}
 ATURAN: TIDAK BOLEH ada manusia/orang dalam scene. Fokus pada environment, atmosphere, lighting. Sangat sinematik.
-FORMAT JSON MURNI: [{"name":"Scene Name","description":"deskripsi ID","imagePrompt":"[scene detail tanpa manusia]. ${d.mood}. 8k, cinematic, photorealistic, detailed environment.","videoPrompt":"Slow cinematic camera movement through [scene]. ${d.mood}. No people. High quality, atmospheric."}] Tepat 5.`,
+FORMAT JSON MURNI: [{"name":"Scene Name","description":"deskripsi ID","imagePrompt":"${d.refImage?'(Use attached visual reference for style/mood) ':''}[scene detail tanpa manusia]. ${d.mood}. 8k, cinematic, photorealistic, detailed environment.","videoPrompt":"Slow cinematic camera movement through [scene]. ${d.mood}. No people. High quality, atmospheric."}] Tepat 5.`,
   },
 
   uiux: {
@@ -182,23 +193,34 @@ FORMAT JSON MURNI: [{"name":"Logo Variant Name","description":"deskripsi ID","im
     cardAccent:'linear-gradient(135deg,#fb923c,#fbbf24)',
     outputType:'prompt',
     promptCards:[{id:'img',label:'Prompt Interior/Architecture Render',colorClass:'card-color-prompt'}],
-    step1: (c) => {c.innerHTML=`<div class="form-grid single-col">
-      <div class="form-group"><label>Jenis Ruangan <span class="required">*</span></label>
-        <div class="select-wrap"><select id="f-room"><option>Kamar Tidur</option><option>Ruang Tamu</option><option>Dapur</option><option>Kamar Mandi</option><option>Ruang Kerja / Home Office</option><option>Kafe / Restoran</option><option>Lobby Hotel</option><option>Eksterior Rumah</option></select><svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div></div>
-      <div class="form-group"><label>Gaya Desain <span class="required">*</span></label><div id="f-intstyle-chips" class="chips-row"></div></div>
-      <div class="form-group"><label>Ukuran Ruangan</label>
-        <div class="select-wrap"><select id="f-size"><option>Kecil (< 20m²)</option><option>Sedang (20-40m²)</option><option>Besar (> 40m²)</option></select><svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div></div></div>`;},
+    step1: (c) => {c.innerHTML=`<div class="form-grid">
+      <label class="upload-area" for="int-ref-upload">
+        <input type="file" id="int-ref-upload" accept="image/*" hidden/>
+        <div id="int-upload-placeholder" class="upload-placeholder">
+          <div class="upload-icon-wrap"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+          <h3>Referensi Desain (Opsional)</h3><p>JPG, PNG, WebP</p><div class="upload-btn-fake">Pilih File</div>
+        </div>
+        <div id="int-upload-preview" class="upload-preview hidden"><img id="int-preview-img" src="" alt="Preview"/><div class="preview-overlay"><div class="preview-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Terpilih</div><button id="int-btn-remove-img" class="btn-remove-img" type="button">Hapus</button></div></div>
+      </label>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="form-group"><label>Jenis Ruangan <span class="required">*</span></label>
+          <div class="select-wrap"><select id="f-room"><option>Kamar Tidur</option><option>Ruang Tamu</option><option>Dapur</option><option>Kamar Mandi</option><option>Ruang Kerja / Home Office</option><option>Kafe / Restoran</option><option>Lobby Hotel</option><option>Eksterior Rumah</option></select><svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div></div>
+        <div class="form-group"><label>Gaya Desain <span class="required">*</span></label><div id="f-intstyle-chips" class="chips-row"></div></div>
+        <div class="form-group"><label>Ukuran Ruangan</label>
+          <div class="select-wrap"><select id="f-size"><option>Kecil (< 20m²)</option><option>Sedang (20-40m²)</option><option>Besar (> 40m²)</option></select><svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div></div>
+      </div>
+    </div>`;},
     step2: (c) => {c.innerHTML=`<div style="display:flex;flex-direction:column;gap:18px">
       <div class="form-group"><label>Waktu / Pencahayaan</label><div id="f-lighting-chips" class="chips-row"></div></div>
       <div class="form-group"><label>Palet Warna</label><input type="text" id="f-intcolor" placeholder="Cth: Earth tone, Monokrom putih-abu"/></div>
       <div class="form-group"><label>Elemen Khusus (Opsional)</label><input type="text" id="f-intelement" placeholder="Cth: Tanaman hias, rak buku besar, perapian"/></div></div>`;},
     validate1: () => (window._activeIntStyle||'').trim(),
     validate2: () => (window._activeLighting||'').trim(),
-    collectStep1: () => ({room:document.getElementById('f-room').value,intStyle:window._activeIntStyle||'',size:document.getElementById('f-size').value}),
+    collectStep1: () => ({room:document.getElementById('f-room').value,intStyle:window._activeIntStyle||'',size:document.getElementById('f-size').value,refImage:window._interiorRefImage||null}),
     collectStep2: () => ({lighting:window._activeLighting||'',intColor:document.getElementById('f-intcolor')?.value||'',element:document.getElementById('f-intelement')?.value||''}),
     buildPrompt: (d) => `Kamu ahli desain interior & arsitektur. Buatkan 5 variasi render interior untuk:
-Ruangan: ${d.room}, Gaya: ${d.intStyle}, Ukuran: ${d.size}, Cahaya: ${d.lighting}${d.intColor?', Warna: '+d.intColor:''}${d.element?', Elemen: '+d.element:''}
-FORMAT JSON MURNI: [{"name":"Design Name","description":"deskripsi ID","imagePrompt":"Photorealistic interior design render of a ${d.size} ${d.room}. ${d.intStyle} style. ${d.lighting} lighting.${d.intColor?' '+d.intColor+' color palette.':''}${d.element?' Featuring '+d.element+'.':''} Octane render, Unreal Engine 5, architectural visualization, 8K resolution, hyperrealistic, professional interior photography.","videoPrompt":""}] Tepat 5.`,
+Ruangan: ${d.room}, Gaya: ${d.intStyle}, Ukuran: ${d.size}, Cahaya: ${d.lighting}${d.intColor?', Warna: '+d.intColor:''}${d.element?', Elemen: '+d.element:''}${d.refImage?', Ada referensi visual desain dari user.':''}
+FORMAT JSON MURNI: [{"name":"Design Name","description":"deskripsi ID","imagePrompt":"${d.refImage?'(Use attached design reference for style inspiration) ':''}Photorealistic interior design render of a ${d.size} ${d.room}. ${d.intStyle} style. ${d.lighting} lighting.${d.intColor?' '+d.intColor+' color palette.':''}${d.element?' Featuring '+d.element+'.':''} Octane render, Unreal Engine 5, architectural visualization, 8K resolution, hyperrealistic, professional interior photography.","videoPrompt":""}] Tepat 5.`,
   },
 };
 

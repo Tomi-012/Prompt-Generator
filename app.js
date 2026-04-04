@@ -140,6 +140,7 @@ function openModule(id){
   const m=MODULES[id];if(!m)return;
   state.activeModule=id;state.step=1;state.data={};state.results=[];state.mermaidCode='';state.activeTab=0;
   window._faceImage=null;window._activeStyle='UGC Casual';
+  window._facelessRefImage=null;window._interiorRefImage=null;
   window._activeSetting='';window._activeVibe='';
   window._activeVisual='';window._activeMood='';
   window._activeUIColor='';window._activeUIStyle='';
@@ -214,7 +215,18 @@ function setupStep1Interactivity(m){
     bindInput('f-category','change');bindInput('f-product','input');
     renderChipGroup('f-style-chips',CHIP_OPTIONS.styles,'_activeStyle','UGC Casual');
   }
-  if(m.id==='faceless'){bindInput('f-topic','input');bindInput('f-narration','input');}
+  if(m.id==='faceless'){
+    const fu=$('#fl-ref-upload');const rm=$('#fl-btn-remove-img');
+    fu?.addEventListener('change',e=>{
+      const f=e.target.files[0];if(!f)return;
+      window._facelessRefImage=URL.createObjectURL(f);
+      $('#fl-preview-img').src=window._facelessRefImage;
+      $('#fl-upload-placeholder').classList.add('hidden');
+      $('#fl-upload-preview').classList.remove('hidden');
+    });
+    rm?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();window._facelessRefImage=null;fu.value='';$('#fl-upload-placeholder').classList.remove('hidden');$('#fl-upload-preview').classList.add('hidden');});
+    bindInput('f-topic','input');bindInput('f-narration','input');
+  }
   if(m.id==='uiux'){bindInput('f-apptype','input');bindInput('f-feature','input');}
   if(m.id==='diagram'){bindInput('f-sql','input');}
   if(m.id==='logo'){
@@ -222,6 +234,15 @@ function setupStep1Interactivity(m){
     renderChipGroup('f-logostyle-chips',CHIP_OPTIONS.logoStyles,'_activeLogoStyle','Minimalis');
   }
   if(m.id==='interior'){
+    const fu=$('#int-ref-upload');const rm=$('#int-btn-remove-img');
+    fu?.addEventListener('change',e=>{
+      const f=e.target.files[0];if(!f)return;
+      window._interiorRefImage=URL.createObjectURL(f);
+      $('#int-preview-img').src=window._interiorRefImage;
+      $('#int-upload-placeholder').classList.add('hidden');
+      $('#int-upload-preview').classList.remove('hidden');
+    });
+    rm?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();window._interiorRefImage=null;fu.value='';$('#int-upload-placeholder').classList.remove('hidden');$('#int-upload-preview').classList.add('hidden');});
     renderChipGroup('f-intstyle-chips',CHIP_OPTIONS.intStyles,'_activeIntStyle','');
   }
 }
