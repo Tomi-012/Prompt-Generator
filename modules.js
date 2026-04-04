@@ -52,7 +52,7 @@ const MODULES = {
     collectStep2: () => ({setting:window._activeSetting||document.getElementById('f-setting').value,vibe:window._activeVibe||document.getElementById('f-vibe').value,color:document.getElementById('f-color').value,lang:window._activeLang||'Indonesia'}),
     buildPrompt: (d) => `Kamu ahli fotografi produk afiliasi. Buatkan 5 variasi pose foto/video untuk produk afiliasi.
 Kategori: ${d.category}, Produk: ${d.product}, Setting: ${d.setting}, Vibe: ${d.vibe}, Platform: ${d.platform}, Gaya: ${d.style}${d.color?', Warna Brand: '+d.color:''}${d.faceImage?', Ada referensi wajah.':''}
-Bahasa hasil (name, description, prompt text): ${d.lang}
+PENTING: Gunakan bahasa ${d.lang} untuk merespons bagian 'name' dan 'description'. Nilai untuk 'imagePrompt' HARUS SELALU dalam bahasa Inggris agar kompatibel dengan sistem Midjourney.
 ATURAN: Jika BAJU→fokus kain/potongan. SEPATU→low-angle/kaki. HIJAB→draping/framing wajah. MAKANAN→interaksi makan. SKINCARE→aplikasi/glow. AKSESORIS→detail/refleksi.
 FORMAT JSON MURNI (tanpa markdown): [{"name":"...","description":"deskripsi ID","imagePrompt":"Photorealistic portrait of Indonesian character. ${d.faceImage?'(Use attached face reference) ':''}[pose detail]. Set in ${d.setting}. ${d.vibe}. Aspect ${(d.platform.match(/\(([^)]+)\)/)||['','9:16'])[1]}. 8k, cinematic lighting, photorealism, 35mm lens.${d.color?' Color grading: '+d.color+'.':''}","videoPrompt":"Cinematic short video in ${d.setting}. [action]. ${d.vibe}. Aspect ${(d.platform.match(/\(([^)]+)\)/)||['','9:16'])[1]}. High quality, steady camera."}] Berikan tepat 5 objek.`,
   },
@@ -94,7 +94,7 @@ FORMAT JSON MURNI (tanpa markdown): [{"name":"...","description":"deskripsi ID",
     collectStep2: () => ({visual:window._activeVisual||'',mood:window._activeMood||'',extra:document.getElementById('f-extra')?.value||'',lang:window._activeLang||'Indonesia'}),
     buildPrompt: (d) => `Kamu pembuat prompt visual untuk konten faceless/tanpa wajah. Buatkan 5 variasi background scene.
 Topik: ${d.topic}, Narasi: ${d.narration}, Gaya Visual: ${d.visual}, Mood: ${d.mood}${d.extra?', Detail: '+d.extra:''}${d.refImage?', Ada referensi visual dari user.':''}
-Bahasa hasil (name, description, prompt text): ${d.lang}
+PENTING: Gunakan bahasa ${d.lang} untuk merespons bagian 'name' dan 'description'. Nilai untuk 'imagePrompt' HARUS SELALU dalam bahasa Inggris agar kompatibel dengan sistem Midjourney.
 ATURAN: TIDAK BOLEH ada manusia/orang dalam scene. Fokus pada environment, atmosphere, lighting. Sangat sinematik.
 FORMAT JSON MURNI: [{"name":"Scene Name","description":"deskripsi ID","imagePrompt":"${d.refImage?'(Use attached visual reference for style/mood) ':''}[scene detail tanpa manusia]. ${d.mood}. 8k, cinematic, photorealistic, detailed environment.","videoPrompt":"Slow cinematic camera movement through [scene]. ${d.mood}. No people. High quality, atmospheric."}] Tepat 5.`,
   },
@@ -122,7 +122,7 @@ FORMAT JSON MURNI: [{"name":"Scene Name","description":"deskripsi ID","imageProm
     collectStep2: () => ({uiColor:window._activeUIColor||'',uiStyle:window._activeUIStyle||'',brand:document.getElementById('f-uibrand')?.value||'',lang:window._activeLang||'Indonesia'}),
     buildPrompt: (d) => `Kamu ahli UI/UX design. Buatkan 5 variasi mockup desain untuk:
 Jenis: ${d.appType}, Device: ${d.device}, Fitur: ${d.feature}, Tema: ${d.uiColor}, Gaya: ${d.uiStyle}${d.brand?', Warna Brand: '+d.brand:''}
-Bahasa hasil (name, description, prompt text): ${d.lang}
+PENTING: Gunakan bahasa ${d.lang} untuk merespons bagian 'name' dan 'description'. Nilai untuk 'imagePrompt' HARUS SELALU dalam bahasa Inggris agar kompatibel dengan sistem Midjourney.
 FORMAT JSON MURNI: [{"name":"Mockup Name","description":"deskripsi ID","imagePrompt":"Dribbble-style UI/UX mockup for ${d.appType}. ${d.device} view. Showing ${d.feature}. ${d.uiStyle} design style. ${d.uiColor} color scheme.${d.brand?' Primary color: '+d.brand+'.':''} Clean layout, modern typography, pixel-perfect, 4K resolution, professional UI design.","videoPrompt":""}] Tepat 5.`,
   },
 
@@ -188,7 +188,7 @@ ATURAN PENTING:
     collectStep2: () => ({logoColor:window._activeLogoColor||'',symbol:document.getElementById('f-symbol')?.value||'',logoRef:document.getElementById('f-logoref')?.value||'',lang:window._activeLang||'Indonesia'}),
     buildPrompt: (d) => `Kamu ahli desain logo. Buatkan 5 variasi prompt logo untuk:
 Brand: ${d.brand}, Industri: ${d.industry}, Gaya: ${d.logoStyle}, Warna: ${d.logoColor}${d.symbol?', Simbol: '+d.symbol:''}${d.logoRef?', Referensi: '+d.logoRef:''}
-Bahasa hasil (name, description, prompt text): ${d.lang}
+PENTING: Gunakan bahasa ${d.lang} untuk merespons bagian 'name' dan 'description'. Nilai untuk 'imagePrompt' HARUS SELALU dalam bahasa Inggris agar kompatibel dengan sistem Midjourney.
 ATURAN: Logo HARUS flat/vector style. Background PUTIH BERSIH. TIDAK ADA teks/tulisan dalam logo. Clean lines.
 FORMAT JSON MURNI: [{"name":"Logo Variant Name","description":"deskripsi ID","imagePrompt":"Professional ${d.logoStyle} logo design for ${d.brand}, a ${d.industry} brand. ${d.logoColor} color palette.${d.symbol?' Incorporating '+d.symbol+' symbol.':''} Vector flat design, white background, no text, clean lines, minimalist, professional branding, 4K.${d.logoRef?' Inspired by '+d.logoRef+' style.':''}","videoPrompt":""}] Tepat 5.`,
   },
@@ -229,7 +229,7 @@ FORMAT JSON MURNI: [{"name":"Logo Variant Name","description":"deskripsi ID","im
     collectStep2: () => ({lighting:window._activeLighting||'',intColor:document.getElementById('f-intcolor')?.value||'',element:document.getElementById('f-intelement')?.value||'',lang:window._activeLang||'Indonesia'}),
     buildPrompt: (d) => `Kamu ahli desain interior & arsitektur. Buatkan 5 variasi render interior untuk:
 Ruangan: ${d.room}, Gaya: ${d.intStyle}, Ukuran: ${d.size}, Cahaya: ${d.lighting}${d.intColor?', Warna: '+d.intColor:''}${d.element?', Elemen: '+d.element:''}${d.refImage?', Ada referensi visual desain dari user.':''}
-Bahasa hasil (name, description, prompt text): ${d.lang}
+PENTING: Gunakan bahasa ${d.lang} untuk merespons bagian 'name' dan 'description'. Nilai untuk 'imagePrompt' HARUS SELALU dalam bahasa Inggris agar kompatibel dengan sistem Midjourney.
 FORMAT JSON MURNI: [{"name":"Design Name","description":"deskripsi ID","imagePrompt":"${d.refImage?'(Use attached design reference for style inspiration) ':''}Photorealistic interior design render of a ${d.size} ${d.room}. ${d.intStyle} style. ${d.lighting} lighting.${d.intColor?' '+d.intColor+' color palette.':''}${d.element?' Featuring '+d.element+'.':''} Octane render, Unreal Engine 5, architectural visualization, 8K resolution, hyperrealistic, professional interior photography.","videoPrompt":""}] Tepat 5.`,
   },
 };
