@@ -1,15 +1,65 @@
 /* ============================================================
    APP.JS — AI Creative Studio Core Engine
-   Dashboard, Wizard, Gemini API, Mermaid, History
+   Dashboard, Wizard, Multi-Provider AI API, Mermaid, History
    ============================================================ */
 (function(){
 'use strict';
 
+// ===================== PROVIDER CONFIGS =====================
+const PROVIDERS = {
+  gemini: {
+    name: 'Google Gemini',
+    url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+    linkText: 'Google AI Studio',
+    linkUrl: 'https://aistudio.google.com/apikey',
+    type: 'gemini',
+  },
+  alibaba: {
+    name: 'Alibaba Cloud (Qwen)',
+    url: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions',
+    model: 'qwen-plus',
+    linkText: 'Alibaba Model Studio',
+    linkUrl: 'https://modelstudio.console.alibabacloud.com/',
+    type: 'openai',
+  },
+  glm: {
+    name: 'GLM Z.AI',
+    url: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+    model: 'glm-4-flash',
+    linkText: 'Z.AI / BigModel',
+    linkUrl: 'https://open.bigmodel.cn/',
+    type: 'openai',
+  },
+  openrouter: {
+    name: 'OpenRouter',
+    url: 'https://openrouter.ai/api/v1/chat/completions',
+    model: 'meta-llama/llama-3.3-70b-instruct:free',
+    linkText: 'OpenRouter.ai',
+    linkUrl: 'https://openrouter.ai/keys',
+    type: 'openai',
+  },
+  groq: {
+    name: 'Groq',
+    url: 'https://api.groq.com/openai/v1/chat/completions',
+    model: 'llama-3.3-70b-versatile',
+    linkText: 'Groq Console',
+    linkUrl: 'https://console.groq.com/keys',
+    type: 'openai',
+  },
+  sambanova: {
+    name: 'SambaNova',
+    url: 'https://api.sambanova.ai/v1/chat/completions',
+    model: 'Meta-Llama-3.3-70B-Instruct',
+    linkText: 'SambaNova Cloud',
+    linkUrl: 'https://cloud.sambanova.ai/apis',
+    type: 'openai',
+  },
+};
+
 // ===================== STATE =====================
-const state = {activeModule:null,step:0,data:{},results:[],mermaidCode:'',usedGemini:false,apiKey:'',activeTab:0};
-const API_KEY_STORAGE='acs_api_key', HISTORY_STORAGE='acs_history';
+const state = {activeModule:null,step:0,data:{},results:[],mermaidCode:'',usedAI:false,apiKey:'',activeTab:0,provider:'gemini'};
+const API_KEY_STORAGE='acs_api_key', PROVIDER_STORAGE='acs_provider', HISTORY_STORAGE='acs_history';
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
-const GEMINI_URL='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 // ===================== INIT =====================
 mermaid.initialize({startOnLoad:false,theme:'dark',themeVariables:{
@@ -19,14 +69,42 @@ mermaid.initialize({startOnLoad:false,theme:'dark',themeVariables:{
   actorLineColor:'#9294b0',signalColor:'#e8e8f0',labelBoxBkgColor:'#101028',labelTextColor:'#e8e8f0'
 }});
 
-// Load API Key
-const savedKey=localStorage.getItem(API_KEY_STORAGE);
-if(savedKey){state.apiKey=savedKey;$('#api-key-input').value=savedKey;$('#api-status').textContent='✓ Tersimpan';$('#api-status').className='api-status success';}
+// Load saved provider
+const savedProvider=localStorage.getItem(PROVIDER_STORAGE);
+if(savedProvider && PROVIDERS[savedProvider]){state.provider=savedProvider;$('#api-provider-select').value=savedProvider;}
+updateProviderUI();
+
+// Load API Key (per-provider)
+loadAPIKeyForProvider();
+
+function getKeyStorageId(){return API_KEY_STORAGE+'_'+state.provider;}
+
+function loadAPIKeyForProvider(){
+  const key=localStorage.getItem(getKeyStorageId())||'';
+  state.apiKey=key;
+  $('#api-key-input').value=key;
+  if(key){$('#api-status').textContent='Key tersimpan';$('#api-status').className='api-status success';}
+  else{$('#api-status').textContent='';$('#api-status').className='api-status';}
+}
+
+function updateProviderUI(){
+  const p=PROVIDERS[state.provider];if(!p)return;
+  const linkEl=$('#api-link-href');
+  if(linkEl){linkEl.textContent=p.linkText;linkEl.href=p.linkUrl;}
+}
+
+// Provider change
+$('#api-provider-select').addEventListener('change',e=>{
+  state.provider=e.target.value;
+  localStorage.setItem(PROVIDER_STORAGE,state.provider);
+  updateProviderUI();
+  loadAPIKeyForProvider();
+});
 
 $('#api-key-input').addEventListener('blur',e=>{
   state.apiKey=e.target.value.trim();
-  if(state.apiKey){localStorage.setItem(API_KEY_STORAGE,state.apiKey);$('#api-status').textContent='✓ Tersimpan';$('#api-status').className='api-status success';}
-  else{localStorage.removeItem(API_KEY_STORAGE);$('#api-status').textContent='';$('#api-status').className='api-status';}
+  if(state.apiKey){localStorage.setItem(getKeyStorageId(),state.apiKey);$('#api-status').textContent='Key tersimpan';$('#api-status').className='api-status success';}
+  else{localStorage.removeItem(getKeyStorageId());$('#api-status').textContent='';$('#api-status').className='api-status';}
 });
 $('#btn-toggle-key').addEventListener('click',()=>{const i=$('#api-key-input');i.type=i.type==='password'?'text':'password';});
 
@@ -50,7 +128,6 @@ function renderDashboard(){
 function openModule(id){
   const m=MODULES[id];if(!m)return;
   state.activeModule=id;state.step=1;state.data={};state.results=[];state.mermaidCode='';state.activeTab=0;
-  // Globals for chips
   window._faceImage=null;window._activeStyle='UGC Casual';
   window._activeSetting='';window._activeVibe='';
   window._activeVisual='';window._activeMood='';
@@ -80,7 +157,6 @@ function renderStep(n){
   state.step=n;
   $$('.step-panel').forEach(p=>p.classList.remove('active'));
   const panel=$(`#step-${n}`);if(panel)panel.classList.add('active');
-  // Progress
   const pct=((n-1)/2)*100;
   $('#progress-fill').style.width=pct+'%';
   $$('.progress-step').forEach(s=>{
@@ -97,7 +173,6 @@ function renderStep(n){
     validateCurrentStep();
   }
   if(n===2){
-    // Collect step1 data
     Object.assign(state.data,m.collectStep1());
     m.step2($('#step2-body'),state.data);
     setupStep2Interactivity(m);
@@ -115,7 +190,6 @@ function validateCurrentStep(){
 
 // ===================== STEP 1 INTERACTIVITY =====================
 function setupStep1Interactivity(m){
-  // Affiliate: upload, category, product, style chips
   if(m.id==='affiliate'){
     const fu=$('#face-upload');const rm=$('#btn-remove-img');
     fu?.addEventListener('change',e=>{
@@ -209,7 +283,7 @@ $('#btn-back-2').addEventListener('click',()=>renderStep(1));
 $('#btn-generate').addEventListener('click',()=>{if(!$('#btn-generate').disabled)startGeneration();});
 $('#btn-retry').addEventListener('click',()=>startGeneration());
 $('#btn-use-fallback').addEventListener('click',()=>{
-  state.usedGemini=false;
+  state.usedAI=false;
   const m=MODULES[state.activeModule];
   if(m.outputType==='diagram'){
     state.mermaidCode=`flowchart TD\n  A[Input Data] --> B[Processing]\n  B --> C[Output]\n  C --> D[Done]`;
@@ -222,20 +296,79 @@ $('#btn-use-fallback').addEventListener('click',()=>{
 $('#btn-reset').addEventListener('click',()=>openModule(state.activeModule));
 $('#btn-diagram-reset').addEventListener('click',()=>openModule(state.activeModule));
 
-// ===================== GEMINI API =====================
+// ===================== MULTI-PROVIDER AI API =====================
+async function callAI(prompt, isDiagram){
+  const provider = PROVIDERS[state.provider];
+  if(!provider) throw new Error('Provider tidak ditemukan.');
+
+  if(provider.type === 'gemini'){
+    // Google Gemini format
+    const res = await fetch(`${provider.url}?key=${state.apiKey}`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        contents:[{parts:[{text:prompt}]}],
+        generationConfig:{temperature:0.85,topP:0.95,maxOutputTokens:4096,
+          ...(!isDiagram?{responseMimeType:'application/json'}:{})}
+      })
+    });
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||`HTTP ${res.status}`);}
+    const data=await res.json();
+    const text=data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if(!text) throw new Error('Respon kosong dari Gemini.');
+    return text;
+  } else {
+    // OpenAI-compatible format (Alibaba, GLM, OpenRouter, Groq, SambaNova)
+    const headers = {
+      'Content-Type':'application/json',
+      'Authorization':`Bearer ${state.apiKey}`,
+    };
+    // OpenRouter requires extra headers
+    if(state.provider==='openrouter'){
+      headers['HTTP-Referer'] = window.location.href;
+      headers['X-Title'] = 'AI Creative Studio';
+    }
+
+    const body = {
+      model: provider.model,
+      messages: [
+        {role:'system', content:'Kamu adalah AI assistant yang ahli dan sangat membantu. Jawab selalu dalam format yang diminta user.'},
+        {role:'user', content: prompt}
+      ],
+      temperature: 0.85,
+      max_tokens: 4096,
+    };
+
+    const res = await fetch(provider.url, {
+      method:'POST', headers, body: JSON.stringify(body)
+    });
+
+    if(!res.ok){
+      const e = await res.json().catch(()=>({}));
+      const msg = e?.error?.message || e?.message || `HTTP ${res.status}`;
+      throw new Error(msg);
+    }
+
+    const data = await res.json();
+    const text = data?.choices?.[0]?.message?.content;
+    if(!text) throw new Error(`Respon kosong dari ${provider.name}.`);
+    return text;
+  }
+}
+
 async function startGeneration(){
   const m=MODULES[state.activeModule];if(!m)return;
   Object.assign(state.data,m.collectStep2());
+  const providerName = PROVIDERS[state.provider]?.name || 'AI';
 
   $$('.step-panel').forEach(p=>p.classList.remove('active'));
   $('#step-loading').classList.add('active');
-  $('#loading-title').textContent='Gemini AI sedang bekerja...';
+  $('#loading-title').textContent=`${providerName} sedang bekerja...`;
   $('#loading-subtitle').textContent=m.outputType==='diagram'?'Menganalisis SQL & membuat diagram...':'Meracik 5 variasi kreatif...';
 
   if(!state.apiKey){
     setTimeout(()=>{
-      state.usedGemini=false;
-      if(m.outputType==='diagram'){state.mermaidCode=`flowchart TD\n  A[No API Key] --> B[Please add Gemini API Key]`;showDiagramResult();}
+      state.usedAI=false;
+      if(m.outputType==='diagram'){state.mermaidCode=`flowchart TD\n  A[No API Key] --> B[Please add API Key]`;showDiagramResult();}
       else{state.results=generateFallbackResults();renderStep(3);renderResults();}
       saveToHistory();
     },1200);
@@ -244,23 +377,11 @@ async function startGeneration(){
 
   try{
     const prompt=m.buildPrompt(state.data);
-    const res=await fetch(`${GEMINI_URL}?key=${state.apiKey}`,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        contents:[{parts:[{text:prompt}]}],
-        generationConfig:{temperature:0.85,topP:0.95,maxOutputTokens:4096,
-          ...(m.outputType!=='diagram'?{responseMimeType:'application/json'}:{})}
-      })
-    });
-    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||`HTTP ${res.status}`);}
-    const data=await res.json();
-    const text=data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if(!text)throw new Error('Respon kosong dari Gemini.');
+    const text = await callAI(prompt, m.outputType==='diagram');
 
-    state.usedGemini=true;
+    state.usedAI=true;
 
     if(m.outputType==='diagram'){
-      // Clean mermaid code
       let code=text.replace(/```mermaid\n?/g,'').replace(/```\n?/g,'').trim();
       state.mermaidCode=code;
       showDiagramResult();
@@ -273,7 +394,7 @@ async function startGeneration(){
     }
     saveToHistory();
   }catch(err){
-    console.error('Gemini Error:',err);
+    console.error('AI Error:',err);
     $$('.step-panel').forEach(p=>p.classList.remove('active'));
     $('#step-error').classList.add('active');
     $('#error-message').textContent=err.message;
@@ -281,7 +402,7 @@ async function startGeneration(){
 }
 
 function generateFallbackResults(){
-  return [{name:'Variasi 1',description:'Default template',imagePrompt:'[Gunakan API Key Gemini untuk hasil lebih baik]',videoPrompt:''},
+  return [{name:'Variasi 1',description:'Default template',imagePrompt:'[Gunakan API Key untuk hasil lebih baik]',videoPrompt:''},
     {name:'Variasi 2',description:'Default template',imagePrompt:'[Tambahkan API Key di panel atas]',videoPrompt:''},
     {name:'Variasi 3',description:'Default',imagePrompt:'[Template fallback]',videoPrompt:''},
     {name:'Variasi 4',description:'Default',imagePrompt:'[Template fallback]',videoPrompt:''},
@@ -291,10 +412,10 @@ function generateFallbackResults(){
 // ===================== RESULTS (Prompt-based) =====================
 function renderResults(){
   const m=MODULES[state.activeModule];if(!m)return;
+  const providerName = PROVIDERS[state.provider]?.name || 'AI';
 
-  // Sidebar
   $('#sidebar-title').textContent=m.title+' — Hasil';
-  $('#sidebar-desc').innerHTML=`<strong>${state.data.product||state.data.topic||state.data.appType||state.data.brand||state.data.room||''}</strong> — ${state.usedGemini?'✦ Gemini AI':'⚡ Template'}`;
+  $('#sidebar-desc').innerHTML=`<strong>${state.data.product||state.data.topic||state.data.appType||state.data.brand||state.data.room||''}</strong> — ${state.usedAI?'AI: '+providerName:'Template'}`;
 
   const list=$('#pose-list');list.innerHTML='';
   state.results.forEach((r,i)=>{
@@ -305,7 +426,6 @@ function renderResults(){
     list.appendChild(btn);
   });
 
-  // Build prompt cards
   const container=$('#prompt-cards-container');container.innerHTML='';
   const cards=m.promptCards||[{id:'img',label:'Prompt',colorClass:'card-color-prompt'}];
   cards.forEach(card=>{
@@ -317,7 +437,6 @@ function renderResults(){
     container.appendChild(div);
   });
 
-  // Bind copy buttons
   container.querySelectorAll('.btn-copy').forEach(btn=>{
     btn.addEventListener('click',()=>{
       const ta=$(`#${btn.dataset.target}`);if(!ta)return;
@@ -335,14 +454,11 @@ function renderResults(){
 
 function renderActiveResult(){
   const r=state.results[state.activeTab];if(!r)return;
-  const m=MODULES[state.activeModule];
   $('#result-pose-name').textContent=r.name;
   $('#result-pose-desc').textContent=r.description;
 
-  // Fill textareas
   const imgTA=$('#prompt-img');if(imgTA)imgTA.value=r.imagePrompt||'';
   const vidTA=$('#prompt-vid');if(vidTA)vidTA.value=r.videoPrompt||'';
-  // Negative prompt for affiliate
   const negTA=$('#prompt-neg');
   if(negTA){
     negTA.value='text, watermark, logo, ugly, deformed, bad anatomy, bad hands, extra fingers, missing fingers, extra limbs, fused fingers, long neck, cross-eyed, mutated, disfigured, blurry, out of focus, low quality, jpeg artifacts, signature';
@@ -354,11 +470,11 @@ async function showDiagramResult(){
   $$('.step-panel').forEach(p=>p.classList.remove('active'));
   $('#step-3-diagram').classList.add('active');
 
-  // Update progress
   const pct=100;$('#progress-fill').style.width=pct+'%';
   $$('.progress-step').forEach(s=>{const sn=+s.dataset.step;s.classList.remove('active','completed');if(sn<3)s.classList.add('completed');else if(sn===3)s.classList.add('active');});
 
-  $('#diagram-result-title').textContent=`${state.data.diagType||'Diagram'} — ${state.usedGemini?'✦ Gemini AI':'⚡ Fallback'}`;
+  const providerName = PROVIDERS[state.provider]?.name || 'AI';
+  $('#diagram-result-title').textContent=`${state.data.diagType||'Diagram'} — ${state.usedAI?providerName:'Fallback'}`;
   $('#diagram-code-output').textContent=state.mermaidCode;
 
   const renderArea=$('#diagram-render-area');
@@ -398,7 +514,7 @@ function saveToHistory(){
   const h=loadHistory();
   h.unshift({timestamp:Date.now(),module:state.activeModule,title:MODULES[state.activeModule]?.title||'',
     label:state.data.product||state.data.topic||state.data.appType||state.data.brand||state.data.room||state.data.diagType||'',
-    usedGemini:state.usedGemini,results:state.results,mermaidCode:state.mermaidCode,data:state.data});
+    usedAI:state.usedAI,provider:state.provider,results:state.results,mermaidCode:state.mermaidCode,data:state.data});
   if(h.length>15)h.length=15;
   localStorage.setItem(HISTORY_STORAGE,JSON.stringify(h));
   renderHistory();
@@ -412,15 +528,17 @@ function renderHistory(){
     const item=document.createElement('div');item.className='history-item';
     const d=new Date(entry.timestamp);
     const dateStr=d.toLocaleDateString('id-ID')+' '+d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+    const pName = PROVIDERS[entry.provider]?.name || 'Template';
     item.innerHTML=`<div class="history-item-info"><div class="history-item-title">${entry.label}</div><div class="history-item-meta">${entry.title} · ${dateStr}</div></div>
-      <span class="history-item-badge ${entry.usedGemini?'gemini':'template'}">${entry.usedGemini?'Gemini':'Template'}</span>`;
+      <span class="history-item-badge ${entry.usedAI?'gemini':'template'}">${entry.usedAI?pName:'Template'}</span>`;
     item.addEventListener('click',()=>{
       state.activeModule=entry.module;state.results=entry.results||[];state.mermaidCode=entry.mermaidCode||'';
-      state.usedGemini=entry.usedGemini;state.data=entry.data||{};state.activeTab=0;
+      state.usedAI=entry.usedAI;state.data=entry.data||{};state.activeTab=0;
+      if(entry.provider){state.provider=entry.provider;$('#api-provider-select').value=entry.provider;updateProviderUI();loadAPIKeyForProvider();}
       $('#history-panel').classList.add('hidden');$('#btn-history-toggle').classList.remove('active');
       $('#home-screen').classList.add('hidden');$('#wizard-screen').classList.remove('hidden');
       const m=MODULES[entry.module];
-      $('#wizard-module-icon').textContent=m?.emoji||'';$('#wizard-module-title').textContent=m?.title||'';$('#wizard-module-desc').textContent=m?.desc||'';
+      $('#wizard-module-icon').innerHTML=m?.svgIcon||'';$('#wizard-module-title').textContent=m?.title||'';$('#wizard-module-desc').textContent=m?.desc||'';
       if(m?.outputType==='diagram'){showDiagramResult();}
       else{renderStep(3);renderResults();}
     });

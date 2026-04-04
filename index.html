@@ -44,22 +44,25 @@
     <div class="top-bar">
       <div class="api-config">
         <div class="api-config-inner">
-          <div class="api-config-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path
-                d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-            </svg></div>
-          <div class="api-config-text"><label for="api-key-input">Gemini API Key</label>
-            <p>Dari <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a></p>
+          <div class="api-config-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></div>
+          <div class="api-config-text">
+            <label for="api-provider-select">AI Provider</label>
+            <div class="select-wrap provider-select-wrap">
+              <select id="api-provider-select">
+                <option value="gemini">Google Gemini</option>
+                <option value="alibaba">Alibaba Cloud (Qwen)</option>
+                <option value="glm">GLM Z.AI (Coding Plan)</option>
+                <option value="openrouter">OpenRouter (Free)</option>
+                <option value="groq">Groq (Free)</option>
+                <option value="sambanova">SambaNova (Free)</option>
+              </select>
+              <svg class="select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <p id="api-link-text">Dari <a id="api-link-href" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a></p>
           </div>
           <div class="api-config-field">
-            <input type="password" id="api-key-input" placeholder="AIzaSy..." autocomplete="off" />
-            <button id="btn-toggle-key" class="btn-icon-sm" type="button"><svg width="14" height="14"
-                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                stroke-linejoin="round">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg></button>
+            <input type="password" id="api-key-input" placeholder="API Key..." autocomplete="off"/>
+            <button id="btn-toggle-key" class="btn-icon-sm" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
           </div>
           <div id="api-status" class="api-status"></div>
         </div>
