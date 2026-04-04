@@ -24,7 +24,7 @@ const PROVIDERS = {
   },
   glm: {
     name: 'GLM Z.AI',
-    url: 'https://api.z.ai/api/paas/v4/chat/completions',
+    url: 'https://api.z.ai/api/coding/paas/v4/chat/completions',
     model: 'glm-4-flash',
     linkText: 'Z.AI (International)',
     linkUrl: 'https://z.ai/model-api',
