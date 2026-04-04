@@ -101,11 +101,22 @@ $('#api-provider-select').addEventListener('change',e=>{
   loadAPIKeyForProvider();
 });
 
-$('#api-key-input').addEventListener('blur',e=>{
-  state.apiKey=e.target.value.trim();
-  if(state.apiKey){localStorage.setItem(getKeyStorageId(),state.apiKey);$('#api-status').textContent='Key tersimpan';$('#api-status').className='api-status success';}
-  else{localStorage.removeItem(getKeyStorageId());$('#api-status').textContent='';$('#api-status').className='api-status';}
-});
+function saveAPIKey() {
+  state.apiKey=$('#api-key-input').value.trim();
+  if(state.apiKey){
+    localStorage.setItem(getKeyStorageId(),state.apiKey);
+    $('#api-status').textContent='Key tersimpan';
+    $('#api-status').className='api-status success';
+    showToast('API Key Berhasil Disimpan!');
+  } else {
+    localStorage.removeItem(getKeyStorageId());
+    $('#api-status').textContent='';
+    $('#api-status').className='api-status';
+  }
+}
+
+$('#api-key-input').addEventListener('blur', saveAPIKey);
+if ($('#btn-save-key')) $('#btn-save-key').addEventListener('click', saveAPIKey);
 $('#btn-toggle-key').addEventListener('click',()=>{const i=$('#api-key-input');i.type=i.type==='password'?'text':'password';});
 
 // ===================== DASHBOARD =====================
