@@ -4,7 +4,7 @@
 
 Awalnya diciptakan sebagai "Affiliate Prompt Generator", proyek ini berevolusi menjadi sebuah platform Studio Visual "All-in-One" dengan 6 modul utama yang sangat berguna bagi konten kreator, UI/UX designer, programmer, arsitek interior, dan tim branding.
 
-![AI Creative Studio Preview](https://img.shields.io/badge/Powered_by-Gemini_AI-818cf8?style=for-the-badge&logo=google) ![Vanilla JS](https://img.shields.io/badge/Vanilla_JS-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black) ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white) ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
+![AI Creative Studio Preview](https://img.shields.io/badge/Powered_by-Mas_Tomi-818cf8?style=for-the-badge&logo=google) ![Vanilla JS](https://img.shields.io/badge/Vanilla_JS-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black) ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white) ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
 
 ---
 
