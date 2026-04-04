@@ -61,9 +61,11 @@
             <p id="api-link-text">Dari <a id="api-link-href" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a></p>
           </div>
           <div class="api-config-field">
-            <input type="password" id="api-key-input" placeholder="API Key..." autocomplete="off"/>
-            <button id="btn-toggle-key" class="btn-icon-sm" type="button" title="Tampilkan/Sembunyikan"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-            <button id="btn-save-key" class="btn-primary" style="padding: 6px 12px; font-size: 11px; height: 100%; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">Simpan</button>
+            <div style="position: relative; flex: 1; display:flex;">
+              <input type="password" id="api-key-input" placeholder="API Key..." autocomplete="off" style="width: 100%; padding-right: 32px;"/>
+              <button id="btn-toggle-key" class="btn-icon-sm" type="button" title="Tampilkan/Sembunyikan" style="position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: transparent; border: none; padding: 4px; color: var(--text-muted);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            </div>
+            <button id="btn-save-key" class="btn-primary" style="padding: 6px 12px; font-size: 11px; height: 100%; border-radius: var(--radius-sm);">Simpan</button>
           </div>
           <div id="api-status" class="api-status"></div>
         </div>
@@ -212,8 +214,7 @@
               </svg></div>
             <h2>Terjadi Kesalahan</h2>
             <p id="error-message">Gagal menghubungi Gemini AI.</p>
-            <div class="error-actions"><button id="btn-retry" class="btn-primary">Coba Lagi</button><button
-                id="btn-use-fallback" class="btn-secondary">Gunakan Template</button></div>
+            <div class="error-actions"><button id="btn-retry" class="btn-primary">Coba Lagi</button></div>
           </div>
         </section>
 

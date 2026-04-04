@@ -293,17 +293,6 @@ $('#btn-next-1').addEventListener('click',()=>{if(!$('#btn-next-1').disabled)ren
 $('#btn-back-2').addEventListener('click',()=>renderStep(1));
 $('#btn-generate').addEventListener('click',()=>{if(!$('#btn-generate').disabled)startGeneration();});
 $('#btn-retry').addEventListener('click',()=>startGeneration());
-$('#btn-use-fallback').addEventListener('click',()=>{
-  state.usedAI=false;
-  const m=MODULES[state.activeModule];
-  if(m.outputType==='diagram'){
-    state.mermaidCode=`flowchart TD\n  A[Input Data] --> B[Processing]\n  B --> C[Output]\n  C --> D[Done]`;
-    showDiagramResult();
-  } else {
-    state.results=generateFallbackResults();renderStep(3);renderResults();
-  }
-  saveToHistory();
-});
 $('#btn-reset').addEventListener('click',()=>openModule(state.activeModule));
 $('#btn-diagram-reset').addEventListener('click',()=>openModule(state.activeModule));
 
@@ -377,12 +366,9 @@ async function startGeneration(){
   $('#loading-subtitle').textContent=m.outputType==='diagram'?'Menganalisis SQL & membuat diagram...':'Meracik 5 variasi kreatif...';
 
   if(!state.apiKey){
-    setTimeout(()=>{
-      state.usedAI=false;
-      if(m.outputType==='diagram'){state.mermaidCode=`flowchart TD\n  A[No API Key] --> B[Please add API Key]`;showDiagramResult();}
-      else{state.results=generateFallbackResults();renderStep(3);renderResults();}
-      saveToHistory();
-    },1200);
+    $$('.step-panel').forEach(p=>p.classList.remove('active'));
+    $('#step-error').classList.add('active');
+    $('#error-message').textContent='API Key belum diisi. Silakan isi dan simpan API Key di bagian atas.';
     return;
   }
 
@@ -410,14 +396,6 @@ async function startGeneration(){
     $('#step-error').classList.add('active');
     $('#error-message').textContent=err.message;
   }
-}
-
-function generateFallbackResults(){
-  return [{name:'Variasi 1',description:'Default template',imagePrompt:'[Gunakan API Key untuk hasil lebih baik]',videoPrompt:''},
-    {name:'Variasi 2',description:'Default template',imagePrompt:'[Tambahkan API Key di panel atas]',videoPrompt:''},
-    {name:'Variasi 3',description:'Default',imagePrompt:'[Template fallback]',videoPrompt:''},
-    {name:'Variasi 4',description:'Default',imagePrompt:'[Template fallback]',videoPrompt:''},
-    {name:'Variasi 5',description:'Default',imagePrompt:'[Template fallback]',videoPrompt:''}];
 }
 
 // ===================== RESULTS (Prompt-based) =====================
@@ -523,10 +501,16 @@ $('#btn-download-svg').addEventListener('click',()=>{
 function loadHistory(){try{return JSON.parse(localStorage.getItem(HISTORY_STORAGE)||'[]');}catch{return[];}}
 function saveToHistory(){
   const h=loadHistory();
-  h.unshift({timestamp:Date.now(),module:state.activeModule,title:MODULES[state.activeModule]?.title||'',
+  const newEntry={id:Date.now().toString(),timestamp:Date.now(),module:state.activeModule,title:MODULES[state.activeModule]?.title||'',
     label:state.data.product||state.data.topic||state.data.appType||state.data.brand||state.data.room||state.data.diagType||'',
-    usedAI:state.usedAI,provider:state.provider,results:state.results,mermaidCode:state.mermaidCode,data:state.data});
-  if(h.length>15)h.length=15;
+    usedAI:state.usedAI,provider:state.provider,results:state.results,mermaidCode:state.mermaidCode,data:state.data};
+  h.unshift(newEntry);
+  localStorage.setItem(HISTORY_STORAGE,JSON.stringify(h));
+  renderHistory();
+}
+function deleteHistoryItem(id){
+  let h=loadHistory();
+  h=h.filter(x=>x.id!==id);
   localStorage.setItem(HISTORY_STORAGE,JSON.stringify(h));
   renderHistory();
 }
@@ -535,14 +519,18 @@ function renderHistory(){
   const list=$('#history-list');
   if(!h.length){list.innerHTML='<p class="history-empty">Belum ada riwayat.</p>';return;}
   list.innerHTML='';
-  h.forEach(entry=>{
+  h.forEach((entry, i)=>{
+    if (!entry.id) entry.id = entry.timestamp.toString() + i; // fallback old data
     const item=document.createElement('div');item.className='history-item';
     const d=new Date(entry.timestamp);
     const dateStr=d.toLocaleDateString('id-ID')+' '+d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
     const pName = PROVIDERS[entry.provider]?.name || 'Template';
     item.innerHTML=`<div class="history-item-info"><div class="history-item-title">${entry.label}</div><div class="history-item-meta">${entry.title} · ${dateStr}</div></div>
-      <span class="history-item-badge ${entry.usedAI?'gemini':'template'}">${entry.usedAI?pName:'Template'}</span>`;
-    item.addEventListener('click',()=>{
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span class="history-item-badge ${entry.usedAI?'gemini':'template'}">${entry.usedAI?pName:'Template'}</span>
+        <button class="btn-delete-history btn-icon-sm" data-id="${entry.id}" style="color:var(--color-danger);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
+      </div>`;
+    item.querySelector('.history-item-info').addEventListener('click',()=>{
       state.activeModule=entry.module;state.results=entry.results||[];state.mermaidCode=entry.mermaidCode||'';
       state.usedAI=entry.usedAI;state.data=entry.data||{};state.activeTab=0;
       if(entry.provider){state.provider=entry.provider;$('#api-provider-select').value=entry.provider;updateProviderUI();loadAPIKeyForProvider();}
@@ -552,6 +540,11 @@ function renderHistory(){
       $('#wizard-module-icon').innerHTML=m?.svgIcon||'';$('#wizard-module-title').textContent=m?.title||'';$('#wizard-module-desc').textContent=m?.desc||'';
       if(m?.outputType==='diagram'){showDiagramResult();}
       else{renderStep(3);renderResults();}
+    });
+    item.querySelector('.btn-delete-history').addEventListener('click',(e)=>{
+      e.stopPropagation();
+      deleteHistoryItem(entry.id);
+      showToast('Item riwayat dihapus');
     });
     list.appendChild(item);
   });
