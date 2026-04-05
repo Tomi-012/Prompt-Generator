@@ -57,7 +57,7 @@ const PROVIDERS = {
 };
 
 // ===================== STATE =====================
-const state = {activeModule:null,step:0,data:{},results:[],mermaidCode:'',usedAI:false,apiKey:'',activeTab:0,provider:'gemini'};
+const state = {activeModule:null,step:0,data:{},results:[],mermaidCode:'',usedAI:false,apiKey:'',activeTab:0,provider:'gemini',abortController:null,isGenerating:false};
 const API_KEY_STORAGE='acs_api_key', PROVIDER_STORAGE='acs_provider', HISTORY_STORAGE='acs_history';
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 
@@ -125,6 +125,9 @@ function renderDashboard(){
   Object.values(MODULES).forEach(m=>{
     const card=document.createElement('div');
     card.className='module-card';
+    card.setAttribute('role','listitem');
+    card.setAttribute('tabindex','0');
+    card.setAttribute('aria-label',m.title + ': ' + m.desc);
     card.style.setProperty('--card-accent',m.cardAccent);
     card.style.setProperty('--icon-bg',m.iconBg);
     card.style.setProperty('--icon-color',m.iconColor);
@@ -132,6 +135,7 @@ function renderDashboard(){
     card.style.setProperty('--tag-color',m.iconColor);
     card.innerHTML=`<div class="module-card-icon">${m.svgIcon}</div><h3>${m.title}</h3><p>${m.desc}</p><span class="module-card-tag">${m.tag}</span>`;
     card.addEventListener('click',()=>openModule(m.id));
+    card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openModule(m.id);}});
     grid.appendChild(card);
   });
 }
@@ -201,6 +205,20 @@ function validateCurrentStep(){
 }
 
 // ===================== STEP 1 INTERACTIVITY =====================
+function setupDragDrop(areaSelector, fileInputSelector, previewImgSelector, placeholderSelector, previewSelector, globalVar){
+  const area=document.querySelector(areaSelector);if(!area)return;
+  area.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation();area.classList.add('drag-over');});
+  area.addEventListener('dragleave',e=>{e.preventDefault();e.stopPropagation();area.classList.remove('drag-over');});
+  area.addEventListener('drop',e=>{
+    e.preventDefault();e.stopPropagation();area.classList.remove('drag-over');
+    const f=e.dataTransfer.files[0];if(!f||!f.type.startsWith('image/'))return;
+    window[globalVar]=URL.createObjectURL(f);
+    const img=document.querySelector(previewImgSelector);if(img)img.src=window[globalVar];
+    const ph=document.querySelector(placeholderSelector);if(ph)ph.classList.add('hidden');
+    const pv=document.querySelector(previewSelector);if(pv)pv.classList.remove('hidden');
+    const fi=document.querySelector(fileInputSelector);if(fi)fi.files=e.dataTransfer.files;
+  });
+}
 function setupStep1Interactivity(m){
   if(m.id==='affiliate'){
     const fu=$('#face-upload');const rm=$('#btn-remove-img');
@@ -244,7 +262,10 @@ function setupStep1Interactivity(m){
     });
     rm?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();window._interiorRefImage=null;fu.value='';$('#int-upload-placeholder').classList.remove('hidden');$('#int-upload-preview').classList.add('hidden');});
     renderChipGroup('f-intstyle-chips',CHIP_OPTIONS.intStyles,'_activeIntStyle','');
+    setupDragDrop('.upload-area','#int-ref-upload','#int-preview-img','#int-upload-placeholder','#int-upload-preview','_interiorRefImage');
   }
+  // Setup drag & drop for all upload areas
+  setupDragDrop('.upload-area','#face-upload','#preview-img','#upload-placeholder','#upload-preview','_faceImage');
 }
 
 // ===================== STEP 2 INTERACTIVITY =====================
@@ -289,15 +310,20 @@ function bindInput(id,evt,cb){
 function renderChipGroup(containerId,options,globalVar,defaultVal,clearInput,inputId){
   const container=document.getElementById(containerId);if(!container)return;
   if(defaultVal)window[globalVar]=defaultVal;
+  container.setAttribute('role','radiogroup');
+  container.setAttribute('aria-label', containerId.replace(/[-_]/g,' ').replace(' chips',''));
   container.innerHTML='';
   options.forEach(opt=>{
     const chip=document.createElement('button');
     chip.className='chip'+(window[globalVar]===opt?' active':'');
     chip.type='button';chip.textContent=opt;
+    chip.setAttribute('role','radio');
+    chip.setAttribute('aria-checked',window[globalVar]===opt?'true':'false');
     chip.addEventListener('click',()=>{
       window[globalVar]=opt;
-      container.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+      container.querySelectorAll('.chip').forEach(c=>{c.classList.remove('active');c.setAttribute('aria-checked','false');});
       chip.classList.add('active');
+      chip.setAttribute('aria-checked','true');
       if(clearInput&&inputId){const inp=document.getElementById(inputId);if(inp)inp.value='';}
       validateCurrentStep();
     });
@@ -314,87 +340,134 @@ $('#btn-next-1').addEventListener('click',()=>{if(!$('#btn-next-1').disabled)ren
 $('#btn-back-2').addEventListener('click',()=>renderStep(1));
 $('#btn-generate').addEventListener('click',()=>{if(!$('#btn-generate').disabled)startGeneration();});
 $('#btn-retry').addEventListener('click',()=>startGeneration());
+$('#btn-cancel-generate').addEventListener('click',()=>{
+  if(state.abortController){try{state.abortController.abort();}catch(e){}}
+  state.isGenerating=false;
+  const btnGen=$('#btn-generate'),btnGenText=$('#btn-generate-text');
+  if(btnGen)btnGen.disabled=false;
+  if(btnGenText)btnGenText.textContent=btnGen?.dataset?.origText||'Generate';
+  $$('.step-panel').forEach(p=>p.classList.remove('active'));
+  $('#step-2').classList.add('active');
+});
 $('#btn-reset').addEventListener('click',()=>openModule(state.activeModule));
 $('#btn-diagram-reset').addEventListener('click',()=>openModule(state.activeModule));
 
 // ===================== MULTI-PROVIDER AI API =====================
+function getHTTPErrorMessage(status, providerName) {
+  switch(status) {
+    case 401: return 'API Key tidak valid. Periksa kembali key Anda.';
+    case 403: return 'Akses ditolak. Key Anda tidak memiliki izin.';
+    case 429: return 'Terlalu banyak request. Tunggu beberapa saat dan coba lagi.';
+    case 500: case 502: case 503: return 'Server ' + providerName + ' sedang bermasalah. Coba lagi nanti.';
+    default: return 'Gagal menghubungi ' + providerName + ' (HTTP ' + status + ').';
+  }
+}
+
 async function callAI(prompt, isDiagram){
   const provider = PROVIDERS[state.provider];
   if(!provider) throw new Error('Provider tidak ditemukan.');
 
-  if(provider.type === 'gemini'){
-    // Google Gemini format
-    const res = await fetch(`${provider.url}?key=${state.apiKey}`,{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        contents:[{parts:[{text:prompt}]}],
-        generationConfig:{temperature:0.85,topP:0.95,maxOutputTokens:4096,
-          ...(!isDiagram?{responseMimeType:'application/json'}:{})}
-      })
-    });
-    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||`HTTP ${res.status}`);}
-    const data=await res.json();
-    const text=data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if(!text) throw new Error('Respon kosong dari Gemini.');
-    return text;
-  } else {
-    // OpenAI-compatible format (Alibaba, GLM, OpenRouter, Groq, SambaNova)
-    const headers = {
-      'Content-Type':'application/json',
-      'Authorization':`Bearer ${state.apiKey}`,
-    };
-    // OpenRouter requires extra headers
-    if(state.provider==='openrouter'){
-      headers['HTTP-Referer'] = window.location.href;
-      headers['X-Title'] = 'AI Creative Studio';
+  // Abort previous in-flight request
+  if(state.abortController) { try{state.abortController.abort();}catch(e){} }
+  state.abortController = new AbortController();
+  const signal = state.abortController.signal;
+
+  // 30s timeout
+  const timeoutId = setTimeout(function(){ state.abortController.abort(); }, 30000);
+
+  try {
+    if(provider.type === 'gemini'){
+      const res = await fetch(provider.url + '?key=' + state.apiKey, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          contents:[{parts:[{text:prompt}]}],
+          generationConfig:{temperature:0.85,topP:0.95,maxOutputTokens:4096,
+            ...(!isDiagram?{responseMimeType:'application/json'}:{})}
+        }),
+        signal: signal
+      });
+      if(!res.ok){
+        const e=await res.json().catch(function(){return {};});
+        throw new Error(e?.error?.message || getHTTPErrorMessage(res.status, provider.name));
+      }
+      const data=await res.json();
+      const text=data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if(!text) throw new Error('Respon kosong dari '+provider.name+'.');
+      return text;
+    } else {
+      const headers = {
+        'Content-Type':'application/json',
+        'Authorization':'Bearer '+state.apiKey,
+      };
+      if(state.provider==='openrouter'){
+        headers['HTTP-Referer'] = window.location.href;
+        headers['X-Title'] = 'AI Creative Studio';
+      }
+
+      const body = {
+        model: provider.model,
+        messages: [
+          {role:'system', content:'Kamu adalah AI assistant yang ahli dan sangat membantu. Jawab selalu dalam format yang diminta user.'},
+          {role:'user', content: prompt}
+        ],
+        temperature: 0.85,
+        max_tokens: 4096,
+      };
+
+      const res = await fetch(provider.url, {
+        method:'POST', headers: headers, body: JSON.stringify(body), signal: signal
+      });
+
+      if(!res.ok){
+        const e = await res.json().catch(function(){return {};});
+        const msg = e?.error?.message || e?.message || getHTTPErrorMessage(res.status, provider.name);
+        throw new Error(msg);
+      }
+
+      const data = await res.json();
+      const text = data?.choices?.[0]?.message?.content;
+      if(!text) throw new Error('Respon kosong dari '+provider.name+'.');
+      return text;
     }
-
-    const body = {
-      model: provider.model,
-      messages: [
-        {role:'system', content:'Kamu adalah AI assistant yang ahli dan sangat membantu. Jawab selalu dalam format yang diminta user.'},
-        {role:'user', content: prompt}
-      ],
-      temperature: 0.85,
-      max_tokens: 4096,
-    };
-
-    const res = await fetch(provider.url, {
-      method:'POST', headers, body: JSON.stringify(body)
-    });
-
-    if(!res.ok){
-      const e = await res.json().catch(()=>({}));
-      const msg = e?.error?.message || e?.message || `HTTP ${res.status}`;
-      throw new Error(msg);
-    }
-
-    const data = await res.json();
-    const text = data?.choices?.[0]?.message?.content;
-    if(!text) throw new Error(`Respon kosong dari ${provider.name}.`);
-    return text;
+  } catch(err) {
+    if(err.name === 'AbortError') throw new Error('Request timeout (30 detik). Server terlalu lama merespons.');
+    if(err.message) throw err;
+    throw new Error('Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
 async function startGeneration(){
+  if(state.isGenerating) return;
   const m=MODULES[state.activeModule];if(!m)return;
   Object.assign(state.data,m.collectStep2());
   const providerName = PROVIDERS[state.provider]?.name || 'AI';
 
-  $$('.step-panel').forEach(p=>p.classList.remove('active'));
+  state.isGenerating = true;
+  const btnGen = $('#btn-generate');
+  const btnGenText = $('#btn-generate-text');
+  const origText = btnGenText ? btnGenText.textContent : 'Generate';
+  if(btnGen) btnGen.disabled = true;
+  if(btnGenText) btnGenText.textContent = 'Generating...';
+
+  $$('.step-panel').forEach(function(p){p.classList.remove('active');});
   $('#step-loading').classList.add('active');
-  $('#loading-title').textContent=`${providerName} sedang bekerja...`;
-  $('#loading-subtitle').textContent=m.outputType==='diagram'?'Menganalisis SQL & membuat diagram...':'Meracik 5 variasi kreatif...';
+  $('#loading-title').textContent = providerName + ' sedang bekerja...';
+  $('#loading-subtitle').textContent = m.outputType==='diagram' ? 'Menganalisis SQL & membuat diagram...' : 'Meracik 5 variasi kreatif...';
 
   if(!state.apiKey){
-    $$('.step-panel').forEach(p=>p.classList.remove('active'));
+    $$('.step-panel').forEach(function(p){p.classList.remove('active');});
     $('#step-error').classList.add('active');
     $('#error-message').textContent='API Key belum diisi. Silakan isi dan simpan API Key di bagian atas.';
+    state.isGenerating = false;
+    if(btnGen) btnGen.disabled = false;
+    if(btnGenText) btnGenText.textContent = origText;
     return;
   }
 
   try{
-    const prompt=m.buildPrompt(state.data);
+    const prompt = m.buildPrompt(state.data);
     const text = await callAI(prompt, m.outputType==='diagram');
 
     state.usedAI=true;
@@ -405,17 +478,21 @@ async function startGeneration(){
       showDiagramResult();
     } else {
       let poses;
-      try{poses=JSON.parse(text);}catch{const match=text.match(/\[[\s\S]*\]/);if(match)poses=JSON.parse(match[0]);else throw new Error('Gagal parsing JSON.');}
-      if(!Array.isArray(poses)||!poses.length)throw new Error('Format tidak valid.');
-      state.results=poses.slice(0,5).map(p=>({name:p.name||'Untitled',description:p.description||'',imagePrompt:p.imagePrompt||'',videoPrompt:p.videoPrompt||''}));
+      try{poses=JSON.parse(text);}catch(e){const match=text.match(/\[[\s\S]*\]/);if(match)poses=JSON.parse(match[0]);else throw new Error('Gagal parsing JSON. AI tidak mengembalikan format yang benar. Coba lagi.');}
+      if(!Array.isArray(poses)||!poses.length)throw new Error('Format tidak valid. AI mengembalikan data kosong.');
+      state.results=poses.slice(0,5).map(function(p){return {name:p.name||'Untitled',description:p.description||'',imagePrompt:p.imagePrompt||'',videoPrompt:p.videoPrompt||''};});
       state.activeTab=0;renderStep(3);renderResults();
     }
     saveToHistory();
   }catch(err){
     console.error('AI Error:',err);
-    $$('.step-panel').forEach(p=>p.classList.remove('active'));
+    $$('.step-panel').forEach(function(p){p.classList.remove('active');});
     $('#step-error').classList.add('active');
     $('#error-message').textContent=err.message;
+  } finally {
+    state.isGenerating = false;
+    if(btnGen) btnGen.disabled = false;
+    if(btnGenText) btnGenText.textContent = origText;
   }
 }
 
@@ -453,8 +530,9 @@ function renderResults(){
       navigator.clipboard.writeText(ta.value).then(()=>{
         btn.classList.add('copied');const orig=btn.innerHTML;
         btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Tersalin!';
+        ta.classList.add('copy-highlight');
         showToast('Prompt berhasil disalin!');
-        setTimeout(()=>{btn.classList.remove('copied');btn.innerHTML=orig;},2000);
+        setTimeout(()=>{btn.classList.remove('copied');btn.innerHTML=orig;ta.classList.remove('copy-highlight');},2000);
       });
     });
   });
@@ -575,6 +653,38 @@ $('#btn-history-toggle').addEventListener('click',()=>{
   $('#btn-history-toggle').classList.toggle('active',!hidden);
 });
 $('#btn-clear-history').addEventListener('click',()=>{localStorage.removeItem(HISTORY_STORAGE);renderHistory();showToast('Riwayat dihapus');});
+
+// ---- Export / Import History ----
+$('#btn-export-history').addEventListener('click',()=>{
+  const h=loadHistory();
+  if(!h.length){showToast('Belum ada riwayat untuk di-export.');return;}
+  const blob=new Blob([JSON.stringify(h,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='ai-studio-history-'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  URL.revokeObjectURL(url);
+  showToast('Riwayat berhasil di-export!');
+});
+$('#btn-import-history').addEventListener('click',()=>$('#import-history-file').click());
+$('#import-history-file').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const imported=JSON.parse(ev.target.result);
+      if(!Array.isArray(imported)){showToast('Format file tidak valid.');return;}
+      const existing=loadHistory();
+      const existingIds=new Set(existing.map(x=>x.timestamp));
+      let added=0;
+      imported.forEach(entry=>{if(!existingIds.has(entry.timestamp)){existing.push(entry);added++;}});
+      existing.sort((a,b)=>b.timestamp-a.timestamp);
+      localStorage.setItem(HISTORY_STORAGE,JSON.stringify(existing));
+      renderHistory();
+      showToast(added+' item berhasil di-import!');
+    }catch(err){showToast('Gagal membaca file. Pastikan format JSON valid.');}
+  };
+  reader.readAsText(f);
+  e.target.value='';
+});
 
 // ===================== TOAST =====================
 function showToast(msg){

@@ -13,14 +13,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#818cf8" />
 </head>
 
 <body>
-  <div class="app-bg"></div>
+  <a href="#main-content" class="skip-link">Langsung ke konten utama</a>
+  <div class="app-bg" aria-hidden="true"></div>
   <div id="app" class="app-container">
 
     <!-- HEADER -->
-    <header class="header">
+    <header class="header" role="banner">
 
       <h1 class="header-title">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="url(#gi)" stroke-width="2"
@@ -62,15 +65,15 @@
           </div>
           <div class="api-config-field">
             <div style="position: relative; flex: 1; display:flex;">
-              <input type="password" id="api-key-input" placeholder="API Key..." autocomplete="off" style="width: 100%; padding-right: 32px;"/>
-              <button id="btn-toggle-key" class="btn-icon-sm" type="button" title="Tampilkan/Sembunyikan" style="position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: transparent; border: none; padding: 4px; color: var(--text-muted);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+              <input type="password" id="api-key-input" aria-label="Masukkan API Key" placeholder="API Key..." autocomplete="off" style="width: 100%; padding-right: 32px;"/>
+              <button id="btn-toggle-key" aria-label="Tampilkan atau sembunyikan API Key" class="btn-icon-sm" type="button" title="Tampilkan/Sembunyikan" style="position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: transparent; border: none; padding: 4px; color: var(--text-muted);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
             </div>
-            <button id="btn-save-key" class="btn-primary" style="padding: 6px 12px; font-size: 11px; height: 100%; border-radius: var(--radius-sm);">Simpan</button>
+            <button id="btn-save-key" aria-label="Simpan API Key" class="btn-primary" style="padding: 6px 12px; font-size: 11px; height: 100%; border-radius: var(--radius-sm);">Simpan</button>
           </div>
           <div id="api-status" class="api-status"></div>
         </div>
       </div>
-      <button id="btn-history-toggle" class="btn-history-toggle" type="button">
+      <button id="btn-history-toggle" aria-label="Buka riwayat" class="btn-history-toggle" type="button">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10" />
@@ -88,7 +91,10 @@
             <circle cx="12" cy="12" r="10" />
             <polyline points="12 6 12 12 16 14" />
           </svg> Riwayat</h3>
-        <button id="btn-clear-history" class="btn-clear-history" type="button">Hapus Semua</button>
+        <button id="btn-export-history" class="btn-clear-history" type="button" style="color:var(--color-success);border-color:rgba(52,211,153,0.2);background:rgba(52,211,153,0.1);" title="Export riwayat ke JSON">Export</button>
+        <button id="btn-import-history" class="btn-clear-history" type="button" style="color:var(--text-accent);border-color:rgba(165,180,252,0.2);background:rgba(165,180,252,0.1);" title="Import riwayat dari JSON">Import</button>
+        <input type="file" id="import-history-file" accept=".json" hidden />
+        <button id="btn-clear-history" aria-label="Hapus semua riwayat" class="btn-clear-history" type="button">Hapus Semua</button>
       </div>
       <div id="history-list" class="history-list">
         <p class="history-empty">Belum ada riwayat.</p>
@@ -101,12 +107,12 @@
         <h2>Apa yang ingin Anda buat hari ini?</h2>
         <p>Pilih salah satu modul kreatif di bawah ini</p>
       </div>
-      <div class="module-grid" id="module-grid"></div>
+      <div class="module-grid" id="module-grid" role="list" aria-label="Daftar modul kreatif"></div>
     </section>
 
     <!-- WIZARD -->
     <section id="wizard-screen" class="wizard-screen hidden">
-      <button id="btn-back-home" class="btn-back-home" type="button"><svg width="18" height="18" viewBox="0 0 24 24"
+      <button id="btn-back-home" aria-label="Kembali ke menu utama" class="btn-back-home" type="button"><svg width="18" height="18" viewBox="0 0 24 24"
           fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="15 18 9 12 15 6" />
         </svg> Kembali ke Menu</button>
@@ -134,7 +140,7 @@
         </div>
       </div>
 
-      <main class="main-card">
+      <main class="main-card" id="main-content" role="main">
         <!-- STEP 1 -->
         <section id="step-1" class="step-panel active">
           <div class="step-header">
@@ -150,7 +156,7 @@
           </div>
           <div id="step1-body" class="step-body"></div>
           <div class="step-footer">
-            <div></div><button id="btn-next-1" class="btn-primary" disabled>Lanjut <svg width="18" height="18"
+            <div></div><button id="btn-next-1" aria-label="Lanjut ke langkah 2" class="btn-primary" disabled>Lanjut <svg width="18" height="18"
                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
                 stroke-linejoin="round">
                 <polyline points="9 18 15 12 9 6" />
@@ -172,11 +178,11 @@
           </div>
           <div id="step2-body" class="step-body"></div>
           <div class="step-footer">
-            <button id="btn-back-2" class="btn-secondary"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+            <button id="btn-back-2" aria-label="Kembali ke langkah 1" class="btn-secondary"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="15 18 9 12 15 6" />
               </svg> Kembali</button>
-            <button id="btn-generate" class="btn-primary btn-glow" disabled><svg width="18" height="18"
+            <button id="btn-generate" aria-label="Generate hasil" class="btn-primary btn-glow" disabled><svg width="18" height="18"
                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                 stroke-linejoin="round">
                 <polygon
@@ -200,6 +206,7 @@
             <div class="loading-bar">
               <div class="loading-bar-fill"></div>
             </div>
+            <button id="btn-cancel-generate" aria-label="Batalkan proses generate" class="btn-secondary btn-sm" type="button" style="margin-top:18px;">Batal</button>
           </div>
         </section>
 
@@ -213,8 +220,8 @@
                 <line x1="9" y1="9" x2="15" y2="15" />
               </svg></div>
             <h2>Terjadi Kesalahan</h2>
-            <p id="error-message">Gagal menghubungi Gemini AI.</p>
-            <div class="error-actions"><button id="btn-retry" class="btn-primary">Coba Lagi</button></div>
+            <p id="error-message" aria-live="polite">Gagal menghubungi Gemini AI.</p>
+            <div class="error-actions"><button id="btn-retry" aria-label="Coba generate lagi" class="btn-primary">Coba Lagi</button></div>
           </div>
         </section>
 
@@ -233,7 +240,7 @@
               </div>
               <p class="sidebar-desc" id="sidebar-desc"></p>
               <div id="pose-list" class="pose-list"></div>
-              <button id="btn-reset" class="btn-reset"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              <button id="btn-reset" aria-label="Mulai ulang" class="btn-reset"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="1 4 1 10 7 10" />
                   <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
@@ -254,20 +261,20 @@
             <div class="diagram-toolbar">
               <h2 id="diagram-result-title">Hasil Diagram</h2>
               <div class="diagram-toolbar-actions">
-                <button id="btn-copy-mermaid" class="btn-secondary btn-sm"><svg width="14" height="14"
+                <button id="btn-copy-mermaid" aria-label="Salin kode Mermaid" class="btn-secondary btn-sm"><svg width="14" height="14"
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                     stroke-linejoin="round">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                   </svg> Copy Code</button>
-                <button id="btn-download-svg" class="btn-secondary btn-sm"><svg width="14" height="14"
+                <button id="btn-download-svg" aria-label="Download diagram sebagai SVG" class="btn-secondary btn-sm"><svg width="14" height="14"
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                     stroke-linejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                     <polyline points="7 10 12 15 17 10" />
                     <line x1="12" y1="15" x2="12" y2="3" />
                   </svg> Download SVG</button>
-                <button id="btn-diagram-reset" class="btn-secondary btn-sm"><svg width="14" height="14"
+                <button id="btn-diagram-reset" aria-label="Mulai ulang diagram" class="btn-secondary btn-sm"><svg width="14" height="14"
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                     stroke-linejoin="round">
                     <polyline points="1 4 1 10 7 10" />
@@ -286,7 +293,7 @@
     </section>
 
     <!-- Toast -->
-    <div id="toast" class="toast hidden"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+    <div id="toast" class="toast" role="status" aria-live="polite hidden"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="20 6 9 17 4 12" />
       </svg><span id="toast-message">Berhasil!</span></div>
@@ -298,8 +305,20 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
-  <script src="modules.js"></script>
+  <script src="modules/chip-options.js"></script>
+  <script src="modules/affiliate.js"></script>
+  <script src="modules/faceless.js"></script>
+  <script src="modules/uiux.js"></script>
+  <script src="modules/diagram.js"></script>
+  <script src="modules/logo.js"></script>
+  <script src="modules/interior.js"></script>
+  <script src="modules/index.js"></script>
   <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+  </script>
 </body>
 
 </html>
